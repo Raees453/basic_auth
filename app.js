@@ -1,7 +1,14 @@
-const express = require('express');
+import express from 'express';
 
 const app = express();
 
 app.use(express.json());
 
-module.exports = app;
+app.get('/', (req, res) => {
+    res.status(200).json({
+        'status': 'success',
+        'message': 'Hello World'
+    });
+});
+
+export default app;
