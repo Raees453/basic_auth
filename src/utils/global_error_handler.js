@@ -1,7 +1,7 @@
-// const Exception = require('./exception');
+const Exception = require('./exception');
 
-module.exports = (err, req, res, next) => {
-  console.error('Global Error Handler!');
+module.exports = (err, req, res) => {
+  console.error('Global Error Handler Caught an error');
 
   if (process.env.ENVIRONMENT === 'development') console.error(err);
 
@@ -20,11 +20,14 @@ const handleError = (err) => {
   let error;
 
   // TODO handle multiple kinds on unknown errors here
-  // if (err.code === 'P2002') {
-  //   error = handleDuplicateDataError(err);
-  // } else {
-  //   error = new Exception(`Some Error Occurred`, 500);
-  // }
+  if (err.code === '11000') {
+    error = handleDuplicateDataError(err);
+  } else {
+    error = new Exception(`Some Error Occurred`, 500);
+  }
 
   return error || err;
 };
+
+const handleDuplicateDataError = (err) =>
+  new Exception(`Property '${err.meta.target[0]}' already exists`, 400);
