@@ -12,11 +12,12 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "express": "^4.21.1"
+    "express": "^4.21.1",
+    "mongoose": "^8.8.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.7",
     "prettier": "^3.4.2"
   },
-  "type": "module"
+  "type": "commonjs"
 }
