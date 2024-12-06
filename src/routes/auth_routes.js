@@ -8,6 +8,6 @@ router.route('/reset-password').post(authController.signup);
 
 router
   .route('/update-password')
-  .post(authController.authorize, authController.signup);
+  .post(authController.authorize, authController.updatePassword);
 
 module.exports = router;

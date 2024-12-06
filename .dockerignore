@@ -13,7 +13,6 @@
 **/.settings
 **/.toolstarget
 **/.vs
-**/.vscode
 **/.next
 **/.cache
 **/*.*proj.user
@@ -28,7 +27,3 @@
 **/obj
 **/secrets.dev.yaml
 **/values.dev.yaml
-**/build
-**/dist
-LICENSE
-README.md

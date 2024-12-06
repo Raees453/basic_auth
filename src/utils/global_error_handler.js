@@ -1,17 +1,22 @@
 const Exception = require('./exception');
 
-module.exports = (err, req, res) => {
-  console.error('Global Error Handler Caught an error');
+module.exports = (err, req, res, next) => {
+  console.error(
+    'Global Error Handler Caught an error, ',
+    `Type: ${typeof err}`
+  );
 
   if (process.env.ENVIRONMENT === 'development') console.error(err);
 
   err = handleError(err);
 
   // TODO message needs to be worked out here
-  return res.status(err.code ?? 500).json({
+  res.status(err.code ?? 500).json({
     status: false,
     message: err.message ?? 'Internal Server Error',
   });
+
+  next();
 };
 
 const handleError = (err) => {
@@ -29,5 +34,8 @@ const handleError = (err) => {
   return error || err;
 };
 
-const handleDuplicateDataError = (err) =>
-  new Exception(`Property '${err.meta.target[0]}' already exists`, 400);
+const handleDuplicateDataError = (err) => {
+  console.error(err.data);
+
+  return new Exception(`Property '${err.meta.target[0]}' already exists`, 400);
+};
