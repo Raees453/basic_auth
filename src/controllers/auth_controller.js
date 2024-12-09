@@ -1,3 +1,5 @@
+const nodemailer = require('nodemailer');
+
 const User = require('../models/user');
 const Exception = require('../utils/exception');
 const authentication = require('../utils/authentication');
@@ -93,12 +95,111 @@ exports.updatePassword = asyncHandler(async (req, res, next) => {
   });
 });
 
-exports.forgetPassword = asyncHandler(async (req, res) => {
-  return res.status(200).json({});
+exports.forgetPassword = asyncHandler(async (req, res, next) => {
+  const { email } = req.body;
+
+  if (!email) return next(new Exception('Email is required', 400));
+
+  const user = await User.findOne({ email });
+
+  if (!user) return next(new Exception('No user found', 404));
+
+  const otp = generateOTP();
+
+  const transport = nodemailer.createTransport({
+    host: 'sandbox.smtp.mailtrap.io',
+    port: 2525,
+    auth: {
+      user: process.env.EMAIL_ACCOUNT_ID,
+      pass: process.env.EMAIL_ACCOUNT_PASSWORD,
+    },
+  });
+
+  const result = await transport.sendMail({
+    from: process.env.EMAIL_ACCOUNT,
+    to: email,
+    subject: 'Reset Password',
+    text: `Your OTP in order to reset your password is: ${otp}`,
+  });
+
+  const isSuccess = result.accepted.length !== 0;
+
+  const date = new Date();
+  date.setMinutes(date.getMinutes() + 2);
+
+  // TODO these could be shifted to instance methods instead of here, look into it later on...
+  user.otp = otp;
+  user.otpReason = 'forget-password';
+  user.otpExpires = date;
+
+  await user.save();
+
+  return res.status(isSuccess ? 200 : 400).json({
+    status: isSuccess,
+    message: isSuccess
+      ? 'An Email has been sent your registered email'
+      : 'Some error occurred while sending OTP',
+  });
 });
 
-exports.resetPassword = asyncHandler(async (req, res) => {
-  return res.status(200).json({});
+exports.verifyOTP = asyncHandler(async (req, res, next) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp || otp.length !== 6) {
+    return next(new Exception('Email & OTP is required', 400));
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) return next(new Exception('No user found', 404));
+
+  // most probably an attack or some request mismatch
+  if (user.otpReason !== 'forget-password') {
+    return next(new Exception('Some error occurred', 400));
+  }
+
+  const isValidOTP =
+    user.otp === otp &&
+    user.otpReason === 'forget-password' &&
+    user.otpExpires > Date.now();
+
+  if (!isValidOTP) return next(new Exception('OTP is invalid', 400));
+
+  await user.save();
+
+  const token = authentication.signJWToken(user);
+
+  return res.status(200).json({
+    status: true,
+    message: 'OTP verified',
+    data: token,
+  });
+});
+
+exports.resetPassword = asyncHandler(async (req, res, next) => {
+  const { password, confirmPassword } = req.body;
+  const { user } = req;
+
+  if (!password || !confirmPassword || password !== confirmPassword) {
+    return next(new Exception('Password & Confirm Password required', 400));
+  }
+
+  // most probably an attack or some request mismatch or make sure no duplicate requests are entertained
+  if (user.otpReason !== 'forget-password') {
+    return next(new Exception('Some error occurred', 400));
+  }
+
+  user.password = await authentication.createPasswordHash(password);
+  user.otpReason = undefined;
+  user.otp = undefined;
+  user.otpExpires = undefined;
+
+  await user.save();
+
+  return res.status(200).json({
+    status: true,
+    message: 'Password reset successfully',
+  });
 });
 
 exports.authorize = asyncHandler(async (req, res, next) => {
@@ -128,3 +229,9 @@ exports.authorize = asyncHandler(async (req, res, next) => {
 
   next();
 });
+
+const generateOTP = function (length = 6) {
+  const randomNumber = Math.floor(Math.random() * Math.pow(10, length));
+
+  return String(randomNumber).padStart(length, '0');
+};
