@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const DB_URL = 'mongodb://127.0.0.1:27017/demo';
 
-const connectDB = async () => {
+exports.connectDB = async () => {
   try {
     await mongoose.connect(DB_URL);
 
@@ -13,4 +13,15 @@ const connectDB = async () => {
   }
 };
 
-module.exports = connectDB;
+exports.disconnectDB = async () => {
+  try {
+    // Close the Mongoose connection
+    await mongoose.connection.close();
+    console.log('Mongoose connection closed.\n');
+
+    process.exit(0);
+  } catch (error) {
+    console.error('Error closing Mongoose connection:', error, '\n');
+    process.exit(1);
+  }
+};
