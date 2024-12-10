@@ -14,4 +14,10 @@ app.use(routes);
 
 app.use(globalErrorHandler);
 
+app.get('/', (req, res, next) => {
+  console.log('Get command received');
+
+  next();
+});
+
 module.exports = app;
