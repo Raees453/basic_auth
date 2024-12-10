@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const DB_URL = 'mongodb://127.0.0.1:27017/demo';
+const DB_URL = `mongodb+srv://${process.env.DB_USER_NAME}:${process.env.DB_USER_PASS}@cluster0.uetth.mongodb.net/?retryWrites=true&w=majority&appName=${process.env.DB_NAME}`;
 
 exports.connectDB = async () => {
   try {
@@ -15,7 +15,6 @@ exports.connectDB = async () => {
 
 exports.disconnectDB = async () => {
   try {
-    // Close the Mongoose connection
     await mongoose.connection.close();
     console.log('Mongoose connection closed.\n');
 
